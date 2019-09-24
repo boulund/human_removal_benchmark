@@ -5,6 +5,7 @@ microbiome shotgun sequencing data.
 ## Results
 
 CPU/mem
+
     bbmap.fecal_200__V300019092_L01_1.txt
     s	h:m:s	max_rss	max_vms	max_uss	max_pss	io_in	io_out	mean_load
     11741.9862	3:15:41	19936.88	107738.37	19926.11	19930.88	25452.21	32106.87	0.00
