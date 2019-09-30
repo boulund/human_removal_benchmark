@@ -7,14 +7,24 @@ SAMPLES = [
     "fecal_200__V300019092_L01_1",
     "vag_200__V300019092_L01_2",
 ]
+MAPPERS = [
+    "bbmap",
+    "bowtie2",
+    "bmtagger",
+]
 
 
 rule all:
     input:
         expand("bbmap/{sample}.human.fq.gz", sample=SAMPLES),
         expand("bowtie2/{sample}.human_1.fq.gz", sample=SAMPLES),
-        expand("kraken2/{mapper}.{sample}.human.kreport", mapper=["bbmap", "bowtie2"], sample=SAMPLES),
-        expand("kraken2/{mapper}.{sample}.kreport", mapper=["bbmap", "bowtie2"], sample=SAMPLES),
+        expand("bmtagger/{sample}_1.fastq", sample=SAMPLES),
+        expand("kraken2/{mapper}.{sample}.human.kreport", mapper=MAPPERS[:-1], sample=SAMPLES),  #BMTagger doesn't give a file with human seqs
+        expand("kraken2/{mapper}.{sample}.kreport", mapper=MAPPERS, sample=SAMPLES),
+        #expand("summary/bowtie2_reads_{sample}.txt", sample=SAMPLES),
+        #expand("summary/bowtie2_human_{sample}.txt", sample=SAMPLES),
+        #expand("summary/bbmap_reads_{sample}.txt", sample=SAMPLES),
+        #expand("summary/bbmap_human_{sample}.txt", sample=SAMPLES),
 
 rule bbmap:
     input:
@@ -159,16 +169,12 @@ rule classify_human:
 
 rule classify_non_human:
     input:
-        bbmap_read1="bbmap/{sample}_1.fq.gz",
-        bbmap_read2="bbmap/{sample}_2.fq.gz",
-        bowtie2_read1="bowtie2/{sample}_1.fq.gz",
-        bowtie2_read2="bowtie2/{sample}_2.fq.gz",
+        read1="{mapper}/{sample}_1.fq.gz",
+        read2="{mapper}/{sample}_2.fq.gz",
     output:
-        bowtie2_kreport="kraken2/bowtie2.{sample}.kreport",
-        bowtie2_kraken="kraken2/bowtie2.{sample}.kraken",
-        bbmap_kreport="kraken2/bbmap.{sample}.kreport",
-        bbmap_kraken="kraken2/bbmap.{sample}.kraken",
-    log: "logs/kraken2/{sample}.log"
+        kreport="kraken2/{mapper}.{sample}.kreport",
+        kraken="kraken2/{mapper}.{sample}.kraken",
+    log: "logs/kraken2/{mapper}.{sample}.log"
     threads: 20
     conda: "env.yaml"
     params:
@@ -179,22 +185,12 @@ rule classify_non_human:
         kraken2 \
             --db {params.db} \
             --threads {threads} \
-            --output {output.bbmap_kraken} \
+            --output {output.kraken} \
             --confidence {params.confidence} \
-            --report {output.bbmap_kreport} \
+            --report {output.kreport} \
             --paired \
             --use-names \
-            {input.bbmap_read1} {input.bbmap_read2}  \
-            2>> {log}
-        kraken2 \
-            --db {params.db} \
-            --threads {threads} \
-            --output {output.bowtie2_kraken} \
-            --confidence {params.confidence} \
-            --report {output.bowtie2_kreport} \
-            --paired \
-            --use-names \
-            {input.bowtie2_read1} {input.bowtie2_read2} \
+            {input.read1} {input.read2}  \
             2>> {log}
         """
 
@@ -243,4 +239,72 @@ rule krona_kraken:
             -o {output.filtered} \
             {input.filtered_kronas} \
             >> {log}
+        """
+
+
+rule bmtagger:
+    input:
+        read1="input/{sample}_1.fq.gz",
+        read2="input/{sample}_2.fq.gz",
+    output:
+        temp("{sample}_1.fastq"),
+        temp("{sample}_2.fastq"),
+        read1=temp("bmtagger/{sample}_1.fastq"),
+        read2=temp("bmtagger/{sample}_2.fastq"),
+    log: 
+        stdout="logs/bmtagger/{sample}.stdout.log",
+        stderr="logs/bmtagger/{sample}.stderr.log",
+    benchmark: "benchmark/bmtagger.{sample}.txt"
+    threads: 10
+    conda: "env.yaml"
+    shadow: "shallow"  # Otherwise fastq files mess up the base dir
+    params:
+        bitmask="/db/bmtagger/hg38/hg38.bitmask",
+        srprism="/db/bmtagger/hg38/hg38.srprism",
+        outbasename=lambda w: f"bmtagger/{w.sample}",
+    shell:
+        """
+        reformat.sh \
+            in1={input.read1} \
+            in2={input.read2} \
+            out1={wildcards.sample}_1.fastq \
+            out2={wildcards.sample}_2.fastq \
+            > {log.stdout} \
+            2> {log.stderr}
+            
+        bmtagger.sh \
+            -b {params.bitmask} \
+            -x {params.srprism} \
+            -q 1 \
+            -1 {wildcards.sample}_1.fastq \
+            -2 {wildcards.sample}_2.fastq \
+            -o {params.outbasename} \
+            -X \
+            > {log.stdout} \
+            2> {log.stderr} 
+        """
+
+
+rule rename_compress_bmtagger:
+    input:
+        read1="bmtagger/{sample}_1.fastq",
+        read2="bmtagger/{sample}_2.fastq",
+    output:
+        read1="bmtagger/{sample}_1.fq.gz",
+        read2="bmtagger/{sample}_2.fq.gz",
+    log: 
+        stdout="logs/bmtagger/{sample}.stdout.log",
+        stderr="logs/bmtagger/{sample}.stderr.log",
+    threads: 10
+    conda: "env.yaml"
+    shadow: "shallow"  # Otherwise fastq files mess up the base dir
+    shell:
+        """
+        reformat.sh \
+            in1={input.read1} \
+            in2={input.read2} \
+            out1={output.read1} \
+            out2={output.read2} \
+            > {log.stdout} \
+            2> {log.stderr}
         """

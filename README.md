@@ -12,6 +12,12 @@ CPU/mem
     bbmap.vag_200__V300019092_L01_2.txt
     s           h:m:s    max_rss   max_vms    max_uss   max_pss   io_in     io_out    mean_load
     29994.1121  8:19:54  21317.20  112711.51  21316.31  21316.37  15782.80  21128.40  0.00
+    bmtagger.fecal_200__V300019092_L01_1.txt
+	s           h:m:s     max_rss   max_vms    max_uss  max_pss   io_in     io_out     mean_load
+	18143.8568  5:02:23   8196.92   36763.13   8193.75  8193.80   48319.51  101098.27  0.00
+    bmtagger.vag_200__V300019092_L01_2.txt
+	s           h:m:s     max_rss   max_vms    max_uss   max_pss   io_in     io_out    mean_load
+	11778.1210  3:16:18   8196.92   36763.13   8193.13   8193.49   63719.35  64469.14  0.00
     bowtie2.fecal_200__V300019092_L01_1.txt
     s           h:m:s    max_rss  max_vms  max_uss  max_pss  io_in    io_out     mean_load
     17687.8932  4:54:47  3438.63  5017.18  3427.23  3428.95  9035.55  110415.20  0.00
@@ -29,6 +35,10 @@ Performance
     99.47  153230411  0  F  9604  Hominidae
     kraken2/bbmap.vag_200__V300019092_L01_2.kreport
     60.96  3461241  0  F  9604  Hominidae
+	kraken2/bmtagger.fecal_200__V300019092_L01_1.kreport
+	0.09   102484     0  F  9604  Hominidae
+	kraken2/bmtagger.vag_200__V300019092_L01_2.kreport
+	8.96   204487     0  F  9604  Hominidae
     kraken2/bowtie2.fecal_200__V300019092_L01_1.human.kreport
     98.80  104459  0  F  9604  Hominidae
     kraken2/bowtie2.fecal_200__V300019092_L01_1.kreport
